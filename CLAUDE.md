@@ -183,7 +183,7 @@ The shell assumes a desktop viewport. The map canvas works on touch (touch handl
 
 **Adding a new lesson:**
 1. Export the lesson DATA JSON (use the parser or build manually)
-2. Missing answers → load in `admin_validation.html`, validate, export JSON
+2. Missing answers → load in `admin.html`, validate, export JSON
 3. Add the lesson HTML file alongside the others
 4. Add an entry to the lessons registry (once built — see task 2)
 5. Map the `topic_id` values in `DATA.problems` to map node IDs
