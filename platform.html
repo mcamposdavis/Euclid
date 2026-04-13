@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Euclid — Knowledge Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0e0f0e;color:#e8e5db;font-family:'DM Sans',sans-serif}
+
+  :root{
+    --bg:#0e0f0e;--bg2:#161714;--bg3:#1d1e1b;--bg4:#252621;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+    --text:#e8e5db;--text2:#9a9890;--text3:#5a5955;
+    --teal:#1D9E75;--teal2:#9FE1CB;--teal3:#04342C;
+    --amber:#EF9F27;--amber2:#FAC775;
+    --purple:#7F77DD;--purple2:#AFA9EC;
+    --mono:'DM Mono',monospace;--serif:'Fraunces',serif;--sans:'DM Sans',sans-serif;
+  }
+
+  /* ── Shell ── */
+  .shell{display:grid;grid-template-rows:52px 1fr;height:100vh;min-height:600px}
+
+  /* ── Topbar ── */
+  .topbar{
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;padding:0 20px;gap:0;
+    background:var(--bg);z-index:10;
+  }
+  .logo{
+    font-family:var(--serif);font-size:17px;font-weight:500;
+    letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;
+    margin-right:28px;flex-shrink:0;color:var(--text);
+  }
+  .logo-dot{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+  .nav-tabs{display:flex;gap:2px;flex:1}
+  .nav-tab{
+    padding:0 16px;height:52px;display:flex;align-items:center;
+    font-size:13px;color:var(--text2);cursor:pointer;
+    border-bottom:2px solid transparent;transition:all .15s;
+    gap:7px;user-select:none;white-space:nowrap;
+  }
+  .nav-tab:hover{color:var(--text)}
+  .nav-tab.active{color:var(--text);border-bottom-color:var(--teal)}
+  .tab-badge{
+    font-family:var(--mono);font-size:10px;
+    background:rgba(29,158,117,0.15);color:var(--teal2);
+    border:1px solid rgba(29,158,117,0.25);border-radius:10px;padding:1px 6px;
+  }
+  .topbar-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .streak-badge{
+    display:flex;align-items:center;gap:5px;font-size:12px;
+    font-family:var(--mono);color:var(--amber);
+    background:rgba(239,159,39,0.08);border:1px solid rgba(239,159,39,0.18);
+    border-radius:20px;padding:3px 10px;
+  }
+  .xp-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--teal2)}
+  .xp-bar-wrap{width:72px;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+  .xp-bar-fill{height:100%;border-radius:2px;background:var(--teal);width:63%;transition:width .6s ease}
+  .avatar{
+    width:28px;height:28px;border-radius:50%;background:var(--bg4);
+    border:1px solid var(--border2);display:flex;align-items:center;
+    justify-content:center;font-size:11px;font-weight:500;color:var(--text2);
+  }
+
+  /* ── Body row ── */
+  .body{display:flex;overflow:hidden;height:100%}
+
+  /* ── Map area ── */
+  #wrap{
+    position:relative;flex:1;overflow:hidden;
+    background:var(--color-background-tertiary,#111);
+  }
+  /* ── All original map CSS preserved verbatim below ── */
+  #cv{width:100%;height:100%;cursor:grab;display:block}
+  #cv:active{cursor:grabbing}
+  #tt{
+    position:absolute;pointer-events:none;
+    background:#1a1b19;
+    border:0.5px solid rgba(255,255,255,0.18);
+    border-radius:8px;
+    padding:11px 14px;font-size:13px;color:#ddd9cc;
+    max-width:260px;opacity:0;transition:opacity .15s;z-index:10;
+    line-height:1.4;
+  }
+  #tt .tt-t{font-weight:500;font-size:14px;margin-bottom:4px;color:#e8e5d8}
+  #tt .tt-d{color:#a09d92;line-height:1.5;font-size:12px}
+  #tt .tt-msc{margin-top:5px;font-size:10px;font-family:monospace;color:#6b6960;letter-spacing:.02em}
+  #tt .tt-s{margin-top:4px;font-size:11px;color:#6b6960}
+  #ui{
+    position:absolute;top:14px;left:16px;
+    font-size:11px;color:rgba(200,197,185,0.7);
+    font-family:sans-serif;line-height:1.8;z-index:5;
+  }
+  #ui strong{color:rgba(225,222,210,0.95);font-weight:500;font-size:14px;display:block;margin-bottom:1px;letter-spacing:-.01em}
+  #ui .sub{font-size:11px;color:rgba(200,197,185,0.7)}
+  .pb{height:2px;border-radius:2px;background:rgba(255,255,255,0.07);margin-top:8px;overflow:hidden;width:160px}
+  .pf{height:100%;border-radius:2px;background:#1D9E75;transition:width .4s}
+  #pt{margin-top:3px;font-size:11px;color:rgba(200,197,185,0.7);font-family:monospace}
+  #ctrls{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:5}
+  #ctrls button{
+    width:30px;height:30px;
+    border:0.5px solid rgba(255,255,255,0.2);
+    border-radius:8px;
+    background:rgba(30,31,28,0.85);
+    color:rgba(210,207,195,0.85);
+    cursor:pointer;font-size:15px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:monospace;
+  }
+  #ctrls button:hover{background:rgba(50,51,46,0.9);color:rgba(225,222,210,1)}
+  #hint{
+    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+    font-size:11px;color:rgba(200,197,185,0.5);
+    font-family:sans-serif;
+    pointer-events:none;transition:opacity .4s;white-space:nowrap;z-index:5;
+  }
+  #depth-filters{
+    position:absolute;bottom:16px;right:14px;
+    display:flex;flex-direction:column;gap:5px;
+    z-index:5;align-items:flex-end;
+  }
+  .df-btn{
+    display:flex;align-items:center;gap:7px;
+    padding:4px 9px 4px 7px;border-radius:20px;
+    border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.06);
+    cursor:pointer;transition:all .15s;
+    font-size:11px;font-family:monospace;
+    color:rgba(210,207,195,0.75);user-select:none;
+  }
+  .df-btn:hover{background:rgba(255,255,255,0.12);color:rgba(220,217,205,0.95)}
+  .df-btn.off{opacity:0.3;text-decoration:line-through}
+  .df-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+  /* ── Completion toast ── */
+  #toast{
+    position:absolute;bottom:20px;left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--bg);border:1px solid rgba(29,158,117,0.4);
+    border-radius:10px;padding:12px 18px;
+    display:flex;align-items:center;gap:12px;
+    font-size:13px;white-space:nowrap;z-index:30;
+    opacity:0;pointer-events:none;transition:all .3s;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all}
+  .toast-icon{
+    width:26px;height:26px;border-radius:50%;
+    background:rgba(29,158,117,0.15);border:1px solid rgba(29,158,117,0.3);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:var(--teal);font-family:var(--mono);flex-shrink:0;
+  }
+  .toast-title{font-weight:500;color:var(--text);font-size:13px;margin-bottom:1px}
+  .toast-sub{font-size:11px;color:var(--text2)}
+  .toast-close{
+    margin-left:6px;background:none;border:none;
+    color:var(--text3);cursor:pointer;font-size:16px;
+    padding:0 0 0 4px;font-family:var(--mono);
+  }
+
+  /* ── Side panel ── */
+  #panel{
+    width:0;overflow:hidden;
+    border-left:0px solid var(--border);
+    background:var(--bg);
+    display:flex;flex-direction:column;
+    transition:width .25s ease,border-left-width .25s ease;
+    flex-shrink:0;position:relative;
+  }
+  #panel.open{width:292px;border-left-width:1px}
+  .panel-inner{width:292px;display:flex;flex-direction:column;height:100%;overflow:hidden}
+
+  .panel-header{padding:18px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .panel-domain-tag{
+    font-family:var(--mono);font-size:10px;text-transform:uppercase;
+    letter-spacing:.08em;margin-bottom:7px;
+  }
+  .panel-node-name{
+    font-family:var(--serif);font-size:20px;font-weight:300;
+    letter-spacing:-0.02em;color:var(--text);line-height:1.2;
+  }
+  .panel-node-name em{font-style:italic}
+  .panel-desc{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.5}
+  .panel-msc{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:5px}
+
+  .panel-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+
+  .panel-section-label{
+    font-family:var(--mono);font-size:10px;text-transform:uppercase;
+    letter-spacing:.08em;color:var(--text3);margin-bottom:8px;
+  }
+
+  /* mastery ring */
+  .mastery-row{display:flex;align-items:center;gap:14px}
+  .mastery-info{}
+  .mastery-state{font-size:14px;font-weight:500;margin-bottom:2px}
+  .mastery-sub{font-size:11px;color:var(--text3);line-height:1.4}
+
+  /* context note */
+  .context-note{
+    background:var(--bg3);border:1px solid var(--border);
+    border-radius:6px;padding:10px 12px;
+    font-size:12px;color:var(--text2);line-height:1.5;
+  }
+  .context-note strong{color:var(--text);font-weight:500}
+
+  /* rel lists */
+  .rel-list{display:flex;flex-direction:column;gap:4px}
+  .rel-item{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 10px;background:var(--bg2);
+    border:1px solid var(--border);border-radius:6px;
+    font-size:12px;cursor:pointer;transition:border-color .12s;
+  }
+  .rel-item:hover{border-color:var(--border2)}
+  .rel-icon{
+    width:16px;height:16px;border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-family:var(--mono);flex-shrink:0;
+  }
+  .rel-icon.mastered{background:rgba(29,158,117,0.15);color:var(--teal)}
+  .rel-icon.partial{background:rgba(127,119,221,0.15);color:var(--purple2)}
+  .rel-icon.none{background:var(--bg4);color:var(--text3)}
+  .rel-name{flex:1;color:var(--text2)}
+  .rel-pct{font-family:var(--mono);font-size:10px;color:var(--text3)}
+  .rel-depth{
+    font-family:var(--mono);font-size:9px;
+    padding:1px 5px;border-radius:3px;
+    background:var(--bg4);color:var(--text3);
+  }
+
+  /* panel footer */
+  .panel-footer{
+    padding:14px 18px;border-top:1px solid var(--border);
+    flex-shrink:0;display:flex;gap:8px;
+  }
+  .btn-primary{
+    flex:1;padding:9px;border-radius:7px;border:none;
+    background:var(--teal);color:#04342C;
+    font-family:var(--sans);font-size:13px;font-weight:500;
+    cursor:pointer;transition:opacity .12s;
+  }
+  .btn-primary:hover{opacity:.88}
+  .btn-ghost{
+    padding:9px 12px;border-radius:7px;
+    border:1px solid var(--border2);background:transparent;
+    color:var(--text2);font-family:var(--sans);font-size:13px;
+    cursor:pointer;transition:all .12s;
+  }
+  .btn-ghost:hover{background:var(--bg3);color:var(--text)}
+
+  #panelClose{
+    position:absolute;top:10px;right:10px;
+    width:24px;height:24px;border:1px solid var(--border2);
+    border-radius:5px;background:transparent;color:var(--text3);
+    cursor:pointer;font-size:14px;display:flex;align-items:center;
+    justify-content:center;z-index:2;font-family:var(--mono);
+  }
+  #panelClose:hover{background:var(--bg3);color:var(--text)}
+
+  /* ── View panels ── */
+  .view-panel{display:none;flex:1;overflow:hidden;height:100%}
+  .view-panel.active{display:flex}
+  .view-iframe{width:100%;height:100%;border:none;background:var(--bg)}
+  .nav-tab[data-view="admin"]{color:var(--amber2)}
+  .nav-tab[data-view="admin"]:hover{color:var(--amber)}
+  .nav-tab[data-view="admin"].active{border-bottom-color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo"><div class="logo-dot"></div>Euclid</div>
+    <div class="nav-tabs">
+      <div class="nav-tab" data-view="learn" onclick="switchView('learn')">Learn</div>
+      <div class="nav-tab active" data-view="map" onclick="switchView('map')">Map</div>
+      <div class="nav-tab" data-view="review" onclick="switchView('review')">Review <span class="tab-badge">3 due</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="streak-badge">◆ 12 day streak</div>
+      <div class="xp-pill">
+        <span>1,240 xp</span>
+        <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBarFill"></div></div>
+        <span>Lv 4</span>
+      </div>
+      <div class="avatar">AK</div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Learn panel -->
+    <div class="view-panel" id="view-learn">
+      <iframe class="view-iframe" id="learnFrame" src="about:blank"></iframe>
+    </div>
+
+    <!-- Map panel (active by default) -->
+    <div class="view-panel active" id="view-map">
+    <!-- Map area -->
+    <div id="wrap">
+      <canvas id="cv"></canvas>
+
+      <div id="tt">
+        <div class="tt-t"></div>
+        <div class="tt-d"></div>
+        <div class="tt-msc"></div>
+        <div class="tt-s"></div>
+      </div>
+
+      <div id="ui">
+        <strong>Mathematics</strong>
+        <span class="sub">Scroll to zoom · drag to pan · click to inspect</span>
+        <div class="pb"><div class="pf" id="pf" style="width:0%"></div></div>
+        <div id="pt">0 / 0 topics</div>
+      </div>
+
+      <div id="ctrls">
+        <button id="bz+">+</button>
+        <button id="bz-">−</button>
+        <button id="br">⊙</button>
+      </div>
+
+      <div id="hint">Zoom into a domain to explore its topics</div>
+      <div id="depth-filters"></div>
+
+      <div id="toast">
+        <div class="toast-icon">✓</div>
+        <div>
+          <div class="toast-title" id="toastTitle"></div>
+          <div class="toast-sub" id="toastSub"></div>
+        </div>
+        <button class="toast-close" onclick="hideToast()">×</button>
+      </div>
+    </div>
+
+    </div><!-- /view-map -->
+
+    <!-- Admin panel -->
+    <div class="view-panel" id="view-admin">
+      <iframe class="view-iframe" id="adminFrame" src="about:blank"></iframe>
+    </div>
+
+    <!-- Review panel (placeholder) -->
+    <div class="view-panel" id="view-review" style="align-items:center;justify-content:center;color:var(--text3);font-size:13px;flex-direction:column;gap:8px">
+      <div style="font-family:var(--serif);font-size:20px;font-weight:300;color:var(--text2)">Spaced review</div>
+      <div style="font-family:var(--mono);font-size:11px">SRS queue — coming soon</div>
+    </div>
+
+    <!-- Side panel -->
+    <div id="panel">
+      <button id="panelClose" onclick="closePanel()">×</button>
+      <div class="panel-inner">
+        <div class="panel-header">
+          <div class="panel-domain-tag" id="panelTag"></div>
+          <div class="panel-node-name" id="panelName"></div>
+          <div class="panel-desc" id="panelDesc"></div>
+          <div class="panel-msc" id="panelMsc"></div>
+        </div>
+        <div class="panel-body" id="panelBody"></div>
+        <div class="panel-footer">
+          <button class="btn-ghost" onclick="closePanel()">Close</button>
+          <button class="btn-primary" id="panelGoBtn">Go to lesson →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script src="js/map-data.js"></script>
+<script src="js/map-engine.js"></script>
+<script>
+// ── View router ───────────────────────────────────────────────────────────────
+let learnLoaded = false;
+let adminLoaded = false;
+
+function switchView(view) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.querySelector('.nav-tab[data-view="' + view + '"]');
+  if (tab) tab.classList.add('active');
+
+  document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('view-' + view);
+  if (panel) panel.classList.add('active');
+
+  if (view === 'learn' && !learnLoaded) {
+    document.getElementById('learnFrame').src = 'lesson-2-1.html';
+    learnLoaded = true;
+  }
+  if (view === 'admin' && !adminLoaded) {
+    document.getElementById('adminFrame').src = 'admin.html';
+    adminLoaded = true;
+  }
+  if (view === 'map') setTimeout(() => resize(), 50);
+}
+
+// Add Admin tab to nav
+(function() {
+  const tabs = document.querySelector('.nav-tabs');
+  if (!tabs || tabs.querySelector('[data-view="admin"]')) return;
+  const btn = document.createElement('div');
+  btn.className = 'nav-tab';
+  btn.dataset.view = 'admin';
+  btn.setAttribute('onclick', "switchView('admin')");
+  btn.innerHTML = 'Admin <span style="font-family:var(--mono);font-size:10px;background:rgba(239,159,39,0.12);color:#FAC775;border:1px solid rgba(239,159,39,0.25);border-radius:10px;padding:1px 6px">Author</span>';
+  tabs.appendChild(btn);
+})();
+</script>
+</body>
+</html>
