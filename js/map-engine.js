@@ -15,6 +15,10 @@ function resize(){
 
 let tx=0,ty=0,scale=1;
 
+// ── Zoom thresholds for topic-level node reveal ──
+const TOPIC_FADE_IN = 2.5; // scale at which topic nodes begin appearing
+const TOPIC_FULL    = 3.0; // scale at which topic nodes are fully visible (course node fully faded)
+
 
 // Build flat lookup
 const allNodes=[];
@@ -43,9 +47,36 @@ Object.entries(demoMastery).forEach(([id,v])=>mastery.set(id,v));
 
 function getMastery(id){ return mastery.get(id)||0; }
 
-// ── Fast node map + prereq/dependent links ──
+// ── Fast node map (course nodes only at this point) ──
 const nodeMap=new Map();
 allNodes.forEach(n=>nodeMap.set(n.id,n));
+
+// ── Topic node processing (requires parent wx/wy, so runs after nodeMap is built) ──
+domains.forEach(dom=>{
+  dom.nodes.forEach(n=>{
+    if(!n.topics) return;
+    const parentNd=nodeMap.get(n.id);
+    parentNd.hasTopics=true;
+    n.topics.forEach(t=>{
+      const ta=t.a*Math.PI/180;
+      const tn={
+        ...t,
+        parentId:n.id,
+        domId:dom.id,
+        domCol:dom.col,
+        domLabel:dom.label.replace('\n',' '),
+        wx:parentNd.wx+Math.cos(ta)*t.r,
+        wy:parentNd.wy+Math.sin(ta)*t.r,
+        level:'topic',
+      };
+      allNodes.push(tn);
+      nodeMap.set(tn.id,tn);
+    });
+    if(n.topicEdges) n.topicEdges.forEach(e=>allEdges.push({...e,cross:false}));
+  });
+});
+
+// ── Prereq/dependent links (runs after all nodes are in allNodes) ──
 allNodes.forEach(n=>{n.prereqs=[];n.dependents=[];});
 allEdges.forEach(e=>{
   const s=nodeMap.get(e.s),t=nodeMap.get(e.t);
@@ -130,7 +161,19 @@ function toWorld(sx,sy){
 const enabledDepths=new Set([1,2,3,4,5,6]);
 function nodesVisible(){ return scale>0.75; }
 function globalNodeAlpha(){ return Math.max(0,Math.min(1,(scale-0.75)/0.45)); }
-function nodeIsVisible(d){ return enabledDepths.has(d)&&nodesVisible(); }
+function nodeIsVisible(nd){
+  if(!enabledDepths.has(nd.d)||!nodesVisible()) return false;
+  if(nd.level==='topic') return scale>=TOPIC_FADE_IN;
+  return true;
+}
+// Crossfade multiplier: topic nodes fade in, their parent course node fades out
+function nodeCrossFade(nd){
+  if(nd.level==='topic')
+    return Math.max(0,Math.min(1,(scale-TOPIC_FADE_IN)/(TOPIC_FULL-TOPIC_FADE_IN)));
+  if(nd.hasTopics)
+    return Math.max(0,Math.min(1,(TOPIC_FULL-scale)/(TOPIC_FULL-TOPIC_FADE_IN)));
+  return 1;
+}
 
 // ── Draw: blobs — verbatim ──
 function drawBlob(dom){
@@ -195,22 +238,25 @@ function drawEdges(){
   allEdges.forEach(e=>{
     const sn=nodeMap.get(e.s),tn=nodeMap.get(e.t);
     if(!sn||!tn) return;
-    if(!nodeIsVisible(sn.d)||!nodeIsVisible(tn.d)) return;
+    if(!nodeIsVisible(sn)||!nodeIsVisible(tn)) return;
     const ss=toScreen(sn.wx,sn.wy),ts=toScreen(tn.wx,tn.wy);
     const key=edgeKey(sn,tn);
     const isHoverPath=hoverPathEdgeKeys.has(key);
     const isCritPath=selected&&connectedKeys.has(key)&&criticalPath.includes(sn)&&criticalPath.includes(tn);
     const isConnected=selected&&connectedKeys.has(key)&&!isCritPath;
     const isDimmed=selected&&!isHoverPath&&!isCritPath&&!isConnected;
+    // Apply crossfade for topic-level edges
+    const isTopicEdge=(sn.level==='topic'||tn.level==='topic');
+    const ega=ga*(isTopicEdge?Math.max(0,Math.min(1,(scale-TOPIC_FADE_IN)/(TOPIC_FULL-TOPIC_FADE_IN))):1);
 
     let col,lw,dash=false;
-    if(isHoverPath){          col=`rgba(150,220,255,${0.9*ga})`;  lw=2.2;}
-    else if(isCritPath){      col=`rgba(255,210,70,${0.9*ga})`;   lw=2.5;}
+    if(isHoverPath){          col=`rgba(150,220,255,${0.9*ega})`;  lw=2.2;}
+    else if(isCritPath){      col=`rgba(255,210,70,${0.9*ega})`;   lw=2.5;}
     else if(isConnected){
-      col=tn===selected?`rgba(100,180,255,${0.78*ga})`:`rgba(255,165,70,${0.78*ga})`;lw=1.8;
-    } else if(isDimmed){      col=`rgba(255,255,255,${0.025*ga})`;lw=0.5;}
-    else if(e.cross){         col=`rgba(160,155,140,${0.22*ga})`; lw=0.6; dash=true;}
-    else{                     col=`rgba(140,135,125,${0.38*ga})`; lw=1.1;}
+      col=tn===selected?`rgba(100,180,255,${0.78*ega})`:`rgba(255,165,70,${0.78*ega})`;lw=1.8;
+    } else if(isDimmed){      col=`rgba(255,255,255,${0.025*ega})`;lw=0.5;}
+    else if(e.cross){         col=`rgba(160,155,140,${0.22*ega})`; lw=0.6; dash=true;}
+    else{                     col=`rgba(140,135,125,${0.38*ega})`; lw=1.1;}
 
     ctx.save();
     ctx.beginPath();
@@ -243,7 +289,7 @@ function drawNodes(){
   const ga=globalNodeAlpha();
   const critSet=new Set(criticalPath);
   allNodes.forEach(nd=>{
-    if(!nodeIsVisible(nd.d)) return;
+    if(!nodeIsVisible(nd)) return;
     const sc=toScreen(nd.wx,nd.wy);
     const m=getMastery(nd.id);
     const isSel=nd===selected;
@@ -256,7 +302,7 @@ function drawNodes(){
     const drgb=hexToRgb(depthCols[nd.d]||'#888');
     const baseR=Math.max(3.5,8*Math.min(1,scale/1.8));
     const r=baseR*(1.3-nd.d*0.05)*(isSel?1.5:1);
-    const nodeGa=isDimmed?ga*0.12:ga;
+    const nodeGa=(isDimmed?ga*0.12:ga)*nodeCrossFade(nd);
 
     ctx.save();
     ctx.beginPath();
@@ -312,7 +358,7 @@ function drawNodes(){
     ctx.restore();
 
     const sz=Math.min(13,Math.max(8,8.5+(scale-1)*1.8));
-    const labelAlpha=isDimmed?ga*0.1:ga*0.9;
+    const labelAlpha=isDimmed?nodeGa*0.1:nodeGa*0.9;
     ctx.save();
     ctx.font=`${nd.d<=3?'500':'400'} ${sz}px sans-serif`;
     ctx.textAlign='center';ctx.textBaseline='top';
@@ -369,7 +415,7 @@ window.addEventListener('mousemove',e=>{
   const wpos=toWorld(e.clientX-r.left,e.clientY-r.top);
   let hit=null,minD=999;
   allNodes.forEach(nd=>{
-    if(!nodeIsVisible(nd.d)) return;
+    if(!nodeIsVisible(nd)) return;
     const dx=nd.wx-wpos.x,dy=nd.wy-wpos.y;
     const d=Math.sqrt(dx*dx+dy*dy);
     if(d<16/scale&&d<minD){minD=d;hit=nd;}
@@ -431,7 +477,7 @@ canvas.addEventListener('click',e=>{
   const wpos=toWorld(e.clientX-r.left,e.clientY-r.top);
   let hit=null,minD=999;
   allNodes.forEach(nd=>{
-    if(!nodeIsVisible(nd.d)) return;
+    if(!nodeIsVisible(nd)) return;
     const dx=nd.wx-wpos.x,dy=nd.wy-wpos.y;
     const d=Math.sqrt(dx*dx+dy*dy);
     if(d<16/scale&&d<minD){minD=d;hit=nd;}

@@ -5,6 +5,37 @@
 
 const domains=[
 
+{id:"foundations_domain", label:"Foundations\n& Logic", cx:0, cy:0, rx:290, ry:260, col:"#5F5E5A",
+ nodes:[
+  {id:"informal_logic",label:"Informal Logic",      r:0,   a:0,   d:2, msc:"03A05", desc:"Logical connectives, quantifiers, basic proof techniques, mathematical writing."},
+  {id:"set_theory",  label:"Set Theory",            r:55,  a:230, d:3, msc:"03E99", desc:"ZFC axioms, ordinals, cardinals, the continuum hypothesis, axiom of choice."},
+  {id:"prop_logic",  label:"Propositional Logic",   r:52,  a:300, d:3, msc:"03B05", desc:"Syntax, semantics, truth tables, completeness, resolution."},
+  {id:"pred_logic",  label:"First-Order Logic",     r:70,  a:340, d:3, msc:"03C99", desc:"First-order structures, satisfiability, completeness theorem (Gödel), compactness."},
+  {id:"proof_theory",label:"Proof Theory",          r:95,  a:30,  d:4, msc:"03F99", desc:"Formal deduction, cut elimination, ordinal analysis, proof complexity."},
+  {id:"model_theory",label:"Model Theory",          r:98,  a:340, d:4, msc:"03C99", desc:"Structures, elementary equivalence, types, compactness, ultraproducts."},
+  {id:"computability",label:"Computability Theory", r:95,  a:270, d:4, msc:"03D99", desc:"Turing machines, halting problem, degrees of unsolvability, recursion theory."},
+  {id:"set_adv",     label:"Set Theory (Advanced)", r:118, a:220, d:5, msc:"03E35", desc:"Forcing, large cardinals, inner model theory, determinacy."},
+  {id:"type_theory", label:"Type Theory",           r:115, a:300, d:4, msc:"03B15", desc:"Simple type theory, dependent types, propositions as types (Curry-Howard)."},
+  {id:"categ_found", label:"Categorical Foundations",r:128,a:120, d:5, msc:"18A15", desc:"Toposes as foundations, elementary theory of the category of sets (ETCS)."},
+  {id:"reverse_math",label:"Reverse Mathematics",  r:130, a:40,  d:5, msc:"03B30", desc:"Which set-existence axioms are needed to prove theorems? Big Five subsystems."},
+  {id:"homotopy_type",label:"Homotopy Type Theory",r:148, a:340, d:5, msc:"03B15", desc:"Univalence axiom, higher inductive types, identity types as paths."},
+  {id:"descriptive_st",label:"Descriptive Set Theory",r:142,a:260,d:5,msc:"03E15",desc:"Borel, analytic, projective sets; perfect set property; determinacy consequences."},
+  {id:"constructive",label:"Constructive Mathematics",r:130,a:80,d:4,msc:"03F65",desc:"Intuitionistic logic, Bishop-style constructivism, existence as computability."},
+  {id:"large_cardinals",label:"Large Cardinals",   r:162, a:220, d:6, msc:"03E55", desc:"Inaccessible, Mahlo, measurable, supercompact. The hierarchy above ZFC."},
+  {id:"abs_elem_theory",label:"Geometric Logic",   r:168, a:110, d:6, msc:"03G30", desc:"Geometric morphisms, classifying toposes, coherent theories."},
+ ],
+ edges:[
+  {s:"informal_logic",t:"set_theory"},{s:"informal_logic",t:"prop_logic"},
+  {s:"prop_logic",t:"pred_logic"},{s:"pred_logic",t:"model_theory"},
+  {s:"pred_logic",t:"proof_theory"},{s:"set_theory",t:"set_adv"},
+  {s:"pred_logic",t:"computability"},{s:"proof_theory",t:"reverse_math"},
+  {s:"model_theory",t:"categ_found"},{s:"informal_logic",t:"type_theory"},
+  {s:"type_theory",t:"homotopy_type"},{s:"set_theory",t:"descriptive_st"},
+  {s:"set_adv",t:"large_cardinals"},{s:"categ_found",t:"abs_elem_theory"},
+  {s:"type_theory",t:"constructive"},{s:"constructive",t:"homotopy_type"},
+ ]
+},
+
 {id:"arith_domain", label:"Arithmetic &\nNumber Sense", cx:-460, cy:0, rx:195, ry:170, col:"#854F0B",
  nodes:[
   {id:"counting",    label:"Counting",              r:0,   a:0,   d:1, msc:"97A20", desc:"Natural numbers, one-to-one correspondence, cardinality of small sets."},
@@ -33,7 +64,29 @@ const domains=[
 {id:"algebra_domain", label:"Algebra", cx:-325, cy:-325, rx:225, ry:195, col:"#534AB7",
  nodes:[
   {id:"pre_alg",     label:"Pre-Algebra",           r:0,   a:0,   d:2, msc:"97H20", desc:"Variables and expressions. Translating word problems into equations."},
-  {id:"alg1",        label:"Algebra I",             r:50,  a:230, d:2, msc:"97H30", desc:"Linear equations and inequalities, graphing lines, systems of equations."},
+  {id:"alg1",        label:"Algebra I",             r:50,  a:230, d:2, msc:"97H30", desc:"Linear equations and inequalities, graphing lines, systems of equations.",
+   type:'course',
+   topics:[
+    {id:"alg1_vars",        label:"Variables &\nExpressions",   r:25, a:90,  d:2, msc:"97H20", desc:"Variables, constants, algebraic expressions. Translating English phrases to algebra."},
+    {id:"alg1_solve_lin",   label:"Linear\nEquations",          r:25, a:45,  d:2, msc:"97H30", desc:"Solving one- and two-step linear equations in one variable using properties of equality."},
+    {id:"alg1_solve_ineq",  label:"Inequalities",               r:25, a:0,   d:2, msc:"97H30", desc:"Solving and graphing linear inequalities on the number line; interval notation."},
+    {id:"alg1_graph_lines", label:"Graphing\nLines",            r:25, a:315, d:2, msc:"97H30", desc:"Slope, intercepts, graphing linear equations in two variables; slope-intercept form."},
+    {id:"alg1_systems",     label:"Systems of\nEquations",      r:25, a:270, d:2, msc:"97H30", desc:"Solving systems of two linear equations by substitution and elimination."},
+    {id:"alg1_polynomials", label:"Polynomials",                r:25, a:225, d:2, msc:"97H40", desc:"Adding, subtracting, multiplying polynomials; laws of exponents."},
+    {id:"alg1_factor",      label:"Factoring",                  r:25, a:180, d:2, msc:"97H40", desc:"Factoring GCF, trinomials, and difference of squares."},
+    {id:"alg1_radicals",    label:"Radicals &\nRoots",          r:25, a:135, d:2, msc:"97H40", desc:"Square roots, cube roots, simplifying radicals, and rational exponents."},
+   ],
+   topicEdges:[
+    {s:"alg1_vars",       t:"alg1_solve_lin"},
+    {s:"alg1_vars",       t:"alg1_solve_ineq"},
+    {s:"alg1_solve_lin",  t:"alg1_graph_lines"},
+    {s:"alg1_solve_lin",  t:"alg1_systems"},
+    {s:"alg1_graph_lines",t:"alg1_systems"},
+    {s:"alg1_solve_lin",  t:"alg1_polynomials"},
+    {s:"alg1_polynomials",t:"alg1_factor"},
+    {s:"alg1_factor",     t:"alg1_radicals"},
+   ]
+  },
   {id:"alg2",        label:"Algebra II",            r:75,  a:290, d:2, msc:"97H40", desc:"Polynomials, quadratics, exponentials, logarithms, conic sections."},
   {id:"lin_alg_elem",label:"Linear Algebra",        r:90,  a:340, d:3, msc:"15A03", desc:"Vectors, matrices, determinants, linear transformations, eigenvalues."},
   {id:"intro_proofs_alg",label:"Intro to Proofs",   r:80,  a:150, d:3, msc:"97E50", desc:"Direct proof, contradiction, induction. First exposure to rigorous mathematics."},
@@ -239,37 +292,6 @@ const domains=[
   {s:"prob_theory",t:"large_deviations"},{s:"prob_theory",t:"random_matrices"},
   {s:"stoch_proc",t:"ergodic"},{s:"regression",t:"statistical_learning"},
   {s:"random_matrices",t:"free_prob"},{s:"stoch_calc",t:"spde"},
- ]
-},
-
-{id:"foundations_domain", label:"Foundations\n& Logic", cx:0, cy:0, rx:165, ry:148, col:"#5F5E5A",
- nodes:[
-  {id:"informal_logic",label:"Informal Logic",      r:0,   a:0,   d:2, msc:"03A05", desc:"Logical connectives, quantifiers, basic proof techniques, mathematical writing."},
-  {id:"set_theory",  label:"Set Theory",            r:55,  a:230, d:3, msc:"03E99", desc:"ZFC axioms, ordinals, cardinals, the continuum hypothesis, axiom of choice."},
-  {id:"prop_logic",  label:"Propositional Logic",   r:52,  a:300, d:3, msc:"03B05", desc:"Syntax, semantics, truth tables, completeness, resolution."},
-  {id:"pred_logic",  label:"First-Order Logic",     r:70,  a:340, d:3, msc:"03C99", desc:"First-order structures, satisfiability, completeness theorem (Gödel), compactness."},
-  {id:"proof_theory",label:"Proof Theory",          r:95,  a:30,  d:4, msc:"03F99", desc:"Formal deduction, cut elimination, ordinal analysis, proof complexity."},
-  {id:"model_theory",label:"Model Theory",          r:98,  a:340, d:4, msc:"03C99", desc:"Structures, elementary equivalence, types, compactness, ultraproducts."},
-  {id:"computability",label:"Computability Theory", r:95,  a:270, d:4, msc:"03D99", desc:"Turing machines, halting problem, degrees of unsolvability, recursion theory."},
-  {id:"set_adv",     label:"Set Theory (Advanced)", r:118, a:220, d:5, msc:"03E35", desc:"Forcing, large cardinals, inner model theory, determinacy."},
-  {id:"type_theory", label:"Type Theory",           r:115, a:300, d:4, msc:"03B15", desc:"Simple type theory, dependent types, propositions as types (Curry-Howard)."},
-  {id:"categ_found", label:"Categorical Foundations",r:128,a:120, d:5, msc:"18A15", desc:"Toposes as foundations, elementary theory of the category of sets (ETCS)."},
-  {id:"reverse_math",label:"Reverse Mathematics",  r:130, a:40,  d:5, msc:"03B30", desc:"Which set-existence axioms are needed to prove theorems? Big Five subsystems."},
-  {id:"homotopy_type",label:"Homotopy Type Theory",r:148, a:340, d:5, msc:"03B15", desc:"Univalence axiom, higher inductive types, identity types as paths."},
-  {id:"descriptive_st",label:"Descriptive Set Theory",r:142,a:260,d:5,msc:"03E15",desc:"Borel, analytic, projective sets; perfect set property; determinacy consequences."},
-  {id:"constructive",label:"Constructive Mathematics",r:130,a:80,d:4,msc:"03F65",desc:"Intuitionistic logic, Bishop-style constructivism, existence as computability."},
-  {id:"large_cardinals",label:"Large Cardinals",   r:162, a:220, d:6, msc:"03E55", desc:"Inaccessible, Mahlo, measurable, supercompact. The hierarchy above ZFC."},
-  {id:"abs_elem_theory",label:"Geometric Logic",   r:168, a:110, d:6, msc:"03G30", desc:"Geometric morphisms, classifying toposes, coherent theories."},
- ],
- edges:[
-  {s:"informal_logic",t:"set_theory"},{s:"informal_logic",t:"prop_logic"},
-  {s:"prop_logic",t:"pred_logic"},{s:"pred_logic",t:"model_theory"},
-  {s:"pred_logic",t:"proof_theory"},{s:"set_theory",t:"set_adv"},
-  {s:"pred_logic",t:"computability"},{s:"proof_theory",t:"reverse_math"},
-  {s:"model_theory",t:"categ_found"},{s:"informal_logic",t:"type_theory"},
-  {s:"type_theory",t:"homotopy_type"},{s:"set_theory",t:"descriptive_st"},
-  {s:"set_adv",t:"large_cardinals"},{s:"categ_found",t:"abs_elem_theory"},
-  {s:"type_theory",t:"constructive"},{s:"constructive",t:"homotopy_type"},
  ]
 },
 

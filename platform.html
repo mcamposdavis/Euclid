@@ -20,6 +20,22 @@
     --mono:'DM Mono',monospace;--serif:'Fraunces',serif;--sans:'DM Sans',sans-serif;
   }
 
+  [data-theme="light"]{
+    --bg:#f5f3ef;
+    --bg2:#eceae5;
+    --bg3:#e2dfd9;
+    --bg4:#d4d1ca;
+    --border:rgba(0,0,0,0.08);
+    --border2:rgba(0,0,0,0.16);
+    --text:#1a1b19;
+    --text2:#4a4845;
+    --text3:#8a8880;
+    --teal2:#0d6b48;
+    --teal3:#e0f5ec;
+    --amber2:#a06208;
+    --purple2:#4840a8;
+  }
+
   /* ── Shell ── */
   .shell{display:grid;grid-template-rows:52px 1fr;height:100vh;min-height:600px}
 
@@ -267,7 +283,17 @@
   .nav-tab[data-view="admin"]{color:var(--amber2)}
   .nav-tab[data-view="admin"]:hover{color:var(--amber)}
   .nav-tab[data-view="admin"].active{border-bottom-color:var(--amber)}
+
+  .theme-toggle{
+    width:28px;height:28px;border-radius:6px;
+    border:1px solid var(--border2);background:transparent;
+    color:var(--text2);cursor:pointer;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s;flex-shrink:0;
+  }
+  .theme-toggle:hover{background:var(--bg3);color:var(--text)}
 </style>
+<script>(function(){const t=localStorage.getItem('euclidTheme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})()</script>
 </head>
 <body>
 <div class="shell">
@@ -287,6 +313,7 @@
         <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBarFill"></div></div>
         <span>Lv 4</span>
       </div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
       <div class="avatar">AK</div>
     </div>
   </div>
@@ -376,6 +403,22 @@
 <script src="js/map-data.js"></script>
 <script src="js/map-engine.js"></script>
 <script>
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const next = isLight ? 'dark' : 'light';
+  if (next === 'dark') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', 'light');
+  localStorage.setItem('euclidTheme', next);
+  document.getElementById('themeToggle').textContent = next === 'light' ? '☾' : '☀';
+  ['learnFrame','adminFrame'].forEach(id=>{
+    const f=document.getElementById(id);
+    if(f&&f.contentWindow) try{f.contentWindow.postMessage({type:'euclidTheme',theme:next},'*');}catch(e){}
+  });
+}
+// Set initial toggle icon
+(function(){ if(document.documentElement.getAttribute('data-theme')==='light') document.getElementById('themeToggle').textContent='☾'; })();
+
 // ── View router ───────────────────────────────────────────────────────────────
 let learnLoaded = false;
 let adminLoaded = false;
@@ -390,7 +433,7 @@ function switchView(view) {
   if (panel) panel.classList.add('active');
 
   if (view === 'learn' && !learnLoaded) {
-    document.getElementById('learnFrame').src = 'lesson-2-1.html';
+    document.getElementById('learnFrame').src = 'lesson_2_1.html';
     learnLoaded = true;
   }
   if (view === 'admin' && !adminLoaded) {
