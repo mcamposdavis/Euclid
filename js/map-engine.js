@@ -13,12 +13,13 @@ function resize(){
   draw();
 }
 
-let tx=0,ty=0,scale=1;
+let tx=0,ty=0,scale=0.35;
 
 // ── Zoom thresholds for topic-level node reveal ──
-const TOPIC_FADE_IN = 2.5; // scale at which topic nodes begin appearing
-const TOPIC_FULL    = 3.0; // scale at which topic nodes are fully visible (course node fully faded)
-
+const TOPIC_FADE_IN = 1.2; // scale at which topic nodes begin appearing
+const TOPIC_FULL    = 1.6; // scale at which topic nodes are fully visible (course node fully faded)
+const WS = 10;              // world scale: all domain positions/radii multiplied by this
+const COURSE_BLOB_R = 55;  // course node mini-blob radius in WS-scaled world units
 
 // Build flat lookup
 const allNodes=[];
@@ -32,8 +33,8 @@ domains.forEach(dom=>{
       domId:dom.id,
       domCol:dom.col,
       domLabel:dom.label.replace('\n',' '),
-      wx:dom.cx + Math.cos(a)*frac*dom.rx*0.92,
-      wy:dom.cy + Math.sin(a)*frac*dom.ry*0.92,
+      wx:dom.cx*WS + Math.cos(a)*frac*dom.rx*WS*0.92,
+      wy:dom.cy*WS + Math.sin(a)*frac*dom.ry*WS*0.92,
     });
   });
   dom.edges.forEach(e=>allEdges.push({...e,cross:false}));
@@ -65,8 +66,8 @@ domains.forEach(dom=>{
         domId:dom.id,
         domCol:dom.col,
         domLabel:dom.label.replace('\n',' '),
-        wx:parentNd.wx+Math.cos(ta)*t.r,
-        wy:parentNd.wy+Math.sin(ta)*t.r,
+        wx:parentNd.wx+Math.cos(ta)*t.r*WS,
+        wy:parentNd.wy+Math.sin(ta)*t.r*WS,
         level:'topic',
       };
       allNodes.push(tn);
@@ -159,8 +160,8 @@ function toWorld(sx,sy){
 }
 
 const enabledDepths=new Set([1,2,3,4,5,6]);
-function nodesVisible(){ return scale>0.75; }
-function globalNodeAlpha(){ return Math.max(0,Math.min(1,(scale-0.75)/0.45)); }
+function nodesVisible(){ return scale>0.35; }
+function globalNodeAlpha(){ return Math.max(0,Math.min(1,(scale-0.35)/0.35)); }
 function nodeIsVisible(nd){
   if(!enabledDepths.has(nd.d)||!nodesVisible()) return false;
   if(nd.level==='topic') return scale>=TOPIC_FADE_IN;
@@ -175,10 +176,37 @@ function nodeCrossFade(nd){
   return 1;
 }
 
+// ── Draw: course node mini-blobs — plain circle, fades in with topic reveal ──
+function drawCourseBlobs(){
+  if(!nodesVisible()) return;
+  const ga=globalNodeAlpha();
+  allNodes.forEach(nd=>{
+    if(!nd.hasTopics) return;
+    const blobA=Math.max(0,Math.min(1,(scale-TOPIC_FADE_IN)/(TOPIC_FULL-TOPIC_FADE_IN)))*ga;
+    if(blobA<0.01) return;
+    const sc=toScreen(nd.wx,nd.wy);
+    const br=COURSE_BLOB_R*scale;
+    const rgb=hexToRgb(nd.domCol);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(sc.x,sc.y,br,0,Math.PI*2);
+    const grad=ctx.createRadialGradient(sc.x,sc.y,0,sc.x,sc.y,br);
+    grad.addColorStop(0,`rgba(${rgb.r},${rgb.g},${rgb.b},${0.20*blobA})`);
+    grad.addColorStop(0.5,`rgba(${rgb.r},${rgb.g},${rgb.b},${0.10*blobA})`);
+    grad.addColorStop(1,`rgba(${rgb.r},${rgb.g},${rgb.b},${0.03*blobA})`);
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${0.30*blobA})`;
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
 // ── Draw: blobs — verbatim ──
 function drawBlob(dom){
-  const sc=toScreen(dom.cx,dom.cy);
-  const rx=dom.rx*scale,ry=dom.ry*scale;
+  const sc=toScreen(dom.cx*WS,dom.cy*WS);
+  const rx=dom.rx*WS*scale,ry=dom.ry*WS*scale;
   const rgb=hexToRgb(dom.col);
   ctx.save();
   ctx.beginPath();
@@ -205,7 +233,7 @@ function drawBlob(dom){
 
 // ── Draw: blob labels — verbatim ──
 function drawBlobLabel(dom){
-  const sc=toScreen(dom.cx,dom.cy);
+  const sc=toScreen(dom.cx*WS,dom.cy*WS);
   const rgb=hexToRgb(dom.col);
   const a=Math.max(0,1-globalNodeAlpha()*2);
   if(a<0.02) return;
@@ -374,6 +402,7 @@ function draw(){
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
   ctx.clearRect(0,0,cw,ch);
   domains.forEach(dom=>drawBlob(dom));
+  drawCourseBlobs();
   drawEdges();
   drawNodes();
   domains.forEach(dom=>drawBlobLabel(dom));
@@ -468,7 +497,7 @@ canvas.addEventListener('touchmove',e=>{
 
 document.getElementById('bz+').onclick=()=>{scale=Math.min(8,scale*1.3);draw();};
 document.getElementById('bz-').onclick=()=>{scale=Math.max(0.25,scale/1.3);draw();};
-document.getElementById('br').onclick=()=>{scale=1;tx=0;ty=0;draw();};
+document.getElementById('br').onclick=()=>{scale=0.35;tx=0;ty=0;draw();};
 
 canvas.addEventListener('click',e=>{
   if(moved) return;
