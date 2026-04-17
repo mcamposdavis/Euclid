@@ -1,172 +1,113 @@
-# Sigma.js + PostgreSQL Migration
+# Sigma.js Migration
 
 Migration scope: knowledge map only. Shell, lessons, admin untouched.
+
+**Data strategy:**
+- Map topology (nodes, edges, domains) → `map-data.json` (static file)
+- Mastery scores → `localStorage` (already works, keep it)
+- PostgreSQL deferred until real auth + multi-device sync is needed
 
 ---
 
 ## Phase 0 — Decisions (resolve before writing code)
 
-- [ ] Pick backend: **Supabase** (recommended — zero infra, auto REST) vs Node/Express vs Next.js
-- [ ] Pick user identity strategy: **localStorage UUID** (no auth) vs real auth. Mastery is per-user in DB so this must be decided first.
 - [ ] Decide blob rendering fidelity: **simplified circles/ellipses** vs full custom sigma NodeProgram with sine perturbation
 - [ ] Confirm Vite scope: **map bundle only** vs full project migration
 
 ---
 
-## Phase 1 — Database
+## Phase 1 — Data Export
 
-### 1.1 Schema
+Convert existing JS arrays to graphology-compatible JSON. One-time script.
 
-- [ ] Create `domains` table
-
-  ```sql
-  id          text primary key,
-  name        text,
-  cx          float,   -- world x of domain center
-  cy          float,   -- world y of domain center
-  rx          float,   -- blob x radius
-  ry          float,   -- blob y radius
-  color       text,    -- hex
-  angle_offset float   -- radial position on map
-  ```
-
-- [ ] Create `nodes` table
-
-  ```sql
-  id          text primary key,
-  label       text,
-  depth       int,     -- 1–6
-  msc         text,
-  description text,
-  domain_id   text references domains(id),
-  wx          float,   -- final world x (precomputed from polar)
-  wy          float    -- final world y
-  ```
-
-- [ ] Create `edges` table
-
-  ```sql
-  source_id   text references nodes(id),
-  target_id   text references nodes(id),
-  type        text     -- 'prereq' or 'cross'
-  ```
-
-- [ ] Create `user_mastery` table
-
-  ```sql
-  user_id     text,
-  node_id     text references nodes(id),
-  score       int,     -- 0–100
-  updated_at  timestamptz,
-  primary key (user_id, node_id)
-  ```
-
-### 1.2 Seed data
-
-- [ ] Write extraction script: parse `domains[]` array from `euclid_platform.html` → domain INSERT statements
-- [ ] Write extraction script: parse each domain's `nodes[]` array → node INSERT statements (capture precomputed `wx`/`wy`)
-- [ ] Write extraction script: parse `prereqs[]` per node → edge INSERT statements (`type = 'prereq'`)
-- [ ] Write extraction script: parse `crossEdges[]` → edge INSERT statements (`type = 'cross'`)
-- [ ] Run seed scripts, verify row counts match current JS arrays (~160 nodes, 9 domains)
+- [ ] Write extraction script that reads `euclid_platform.html` and outputs `map-data.json`:
+  - `domains[]` → domain metadata array
+  - Each domain's `nodes[]` → nodes with precomputed `wx`/`wy` world coords
+  - `prereqs[]` per node → edges with `type: "prereq"`
+  - `crossEdges[]` → edges with `type: "cross"`
+- [ ] Verify output row counts match source (~160 nodes, 9 domains)
+- [ ] Place `map-data.json` in `/map/public/` so Vite serves it as static asset
 
 ---
 
-## Phase 2 — API Layer
+## Phase 2 — Build System
 
-### 2.1 Endpoints
-
-- [ ] `GET /nodes` — return all nodes with `{ id, label, depth, msc, description, domain_id, wx, wy }`
-- [ ] `GET /edges` — return all edges with `{ source_id, target_id, type }`
-- [ ] `GET /mastery/:userId` — return `[{ node_id, score }]` for user
-- [ ] `POST /mastery` — upsert `{ user_id, node_id, score }`, return updated row
-
-### 2.2 Validation
-
-- [ ] Verify `/nodes` + `/edges` response matches node/edge counts from seed
-- [ ] Verify mastery upsert round-trips correctly (write then read)
-
----
-
-## Phase 3 — Build System
-
-- [ ] Initialize Vite project in `/map` subdirectory (scope: map only, not full project)
+- [ ] Initialize Vite project in `/map` subdirectory
 - [ ] Install dependencies:
   - `sigma`
   - `graphology`
   - `graphology-types`
-- [ ] Configure Vite to output single `map.bundle.js` file
+- [ ] Configure Vite to output single `map.bundle.js`
 - [ ] Verify bundle loads in isolation (blank HTML test page)
-- [ ] Update shell: load map bundle as blob URL iframe (same pattern as lesson + admin)
+- [ ] Update shell: load map bundle iframe (same pattern as lesson + admin iframes)
 
 ---
 
-## Phase 4 — Sigma.js Map (core)
+## Phase 3 — Sigma.js Map (core)
 
-### 4.1 Graph initialization
+### 3.1 Graph initialization
 
-- [ ] Fetch `/nodes` + `/edges` on map load
-- [ ] Build `graphology.Graph` from API response
-- [ ] Assign node positions from `wx`/`wy` (skip layout algorithm — positions are precomputed)
+- [ ] Fetch `map-data.json` on map load
+- [ ] Build `graphology.Graph` from JSON response
+- [ ] Assign node positions from `wx`/`wy` (skip layout algorithm — positions precomputed)
 - [ ] Initialize `Sigma` instance with graph
 - [ ] Confirm all nodes render at correct positions
 
-### 4.2 Node appearance
+### 3.2 Node appearance
 
 - [ ] Map depth → node size (depth 1 = largest, depth 6 = smallest)
-- [ ] Map depth → node color using existing depth color scale:
-
+- [ ] Map depth → node color using depth color scale:
   ```
   d1 = #EF9F27  d2 = #639922  d3 = #185FA5
   d4 = #534AB7  d5 = #7F77DD  d6 = #E24B4A
   ```
+- [ ] Edge appearance: thin, low-opacity lines; prereq vs cross edges differ in style
 
-- [ ] Edge appearance: thin, low-opacity lines; prereq vs cross edges can differ in style
+### 3.3 Mastery visualization (custom node renderer)
 
-### 4.3 Mastery visualization (custom node renderer)
+Replaces current pie-slice arc drawn on canvas. Mastery values read from `localStorage`.
 
-This replaces the current pie-slice arc drawn on canvas.
-
-- [ ] Research sigma.js `NodeProgram` API — understand how to write custom WebGL node renderer
-- [ ] Design mastery encoding: options are
+- [ ] Research sigma.js `NodeProgram` API — understand custom WebGL node renderer
+- [ ] Design mastery encoding, pick one:
   - Custom WebGL program (pie-slice arc, matches current design exactly)
   - Layered sigma renderer (node body + mastery ring as separate pass)
-  - Fall back to node color intensity (simple, loses pie-slice fidelity)
+  - Node color intensity (simple, loses pie-slice fidelity)
 - [ ] Implement chosen approach
-- [ ] Test: mastery 0% = dim node, mastery 50% = half arc, mastery ≥80% = fully filled teal
+- [ ] Test: mastery 0% = dim node, mastery 50% = half arc, mastery ≥80% = solid teal
 
-### 4.4 Domain blobs (background layer)
+### 3.4 Domain blobs (background layer)
 
-Sigma renders nodes/edges only — blobs need a separate layer.
+Sigma renders nodes/edges only — blobs need separate layer.
 
-- [ ] Research sigma.js custom rendering layers (`beforeRender` / `afterRender` hooks or a DOM overlay)
-- [ ] Implement blob layer: sine-perturbed ellipses per domain drawn on canvas behind sigma canvas
+- [ ] Research sigma.js custom rendering layers (`beforeRender` / `afterRender` hooks or DOM overlay)
+- [ ] Implement blob layer: sine-perturbed ellipses per domain on canvas behind sigma canvas
 - [ ] Sync blob layer camera transform with sigma camera (zoom + pan must match)
 - [ ] Test: pan/zoom keeps blobs aligned with their nodes
 
 ---
 
-## Phase 5 — Interaction
+## Phase 4 — Interaction
 
-### 5.1 Hover behavior
+### 4.1 Hover behavior
 
-- [ ] Node hover → highlight node + show hover path to selected node (replaces `hoverPathNodes` / `hoverPathEdgeKeys`)
-- [ ] Implement BFS path highlight: `bfsPath(hovered, selected)` — walk dependents
+- [ ] Node hover → highlight node + show hover path to selected node
+- [ ] Implement BFS path highlight: walk dependents from hovered node to selected
 - [ ] Dim all non-path nodes/edges during hover (sigma `reducers` API)
 
-### 5.2 Click / selection
+### 4.2 Click / selection
 
-- [ ] Node click → set as `selected`, compute critical path (`computeCriticalPath`)
+- [ ] Node click → set as `selected`, compute critical path
 - [ ] Critical path highlight: nodes + edges on path get distinct color/weight
 - [ ] Side panel: slides in on click, shows label, depth, mastery ring, prereqs list, dependents list, critical path (clickable)
-- [ ] Clicking a node in the side panel's critical path list → select that node on the map
+- [ ] Clicking node in side panel critical path list → select that node on map
 
-### 5.3 Depth filter
+### 4.3 Depth filter
 
-- [ ] Rebuild depth filter toggles UI (currently bottom-right buttons d1–d6)
+- [ ] Rebuild depth filter toggles UI (bottom-right buttons d1–d6)
 - [ ] Toggle depth → filter graphology graph → re-render sigma (show/hide nodes by depth)
 - [ ] Active filter state preserved across zoom/pan
 
-### 5.4 Camera
+### 4.4 Camera
 
 - [ ] Zoom in/out (sigma built-in)
 - [ ] Pan (sigma built-in)
@@ -174,55 +115,47 @@ Sigma renders nodes/edges only — blobs need a separate layer.
 
 ---
 
-## Phase 6 — Mastery Bridge
+## Phase 5 — Mastery Bridge
 
-- [ ] Replace in-memory `mastery Map` with API calls
-- [ ] `window.euclidMap.setMastery(id, val)` → `POST /mastery` with current user_id
-- [ ] `window.euclidMap.getMastery(id)` → read from local cache (populated at map load from `GET /mastery/:userId`)
-- [ ] On mastery update, re-render affected node without full graph reload
-- [ ] Remove `demoMastery` hardcoded seed values
-
----
-
-## Phase 7 — User Identity
-
-*(depends on Phase 0 decision)*
-
-**If localStorage UUID (no auth):**
-
-- [ ] On first map load, generate UUID, store in `localStorage` as `euclid_user_id`
-- [ ] All mastery API calls use this UUID as `user_id`
-
-**If real auth:**
-
-- [ ] Defer until auth system is chosen — keep localStorage UUID in the interim
+- [ ] On map load, read all mastery scores from `localStorage`
+- [ ] `window.euclidMap.setMastery(id, val)` → write to `localStorage` + re-render affected node
+- [ ] `window.euclidMap.getMastery(id)` → read from `localStorage`
+- [ ] Re-render affected node on mastery update without full graph reload
+- [ ] Remove `demoMastery` hardcoded seed values from old JS
 
 ---
 
-## Phase 8 — Shell Integration
+## Phase 6 — Shell Integration
 
 - [ ] Remove old canvas map code from `euclid_platform.html`
-- [ ] Point `#view-map` panel to sigma bundle iframe (blob URL)
-- [ ] Verify `window.euclidMap` API still accessible from lesson iframe across new boundary
+- [ ] Point `#view-map` panel to sigma bundle iframe
+- [ ] Verify `window.euclidMap` API accessible from lesson iframe across new boundary
 - [ ] Verify mastery set in lesson → map node updates without page reload
 - [ ] Test all four tabs still work (Learn / Map / Review / Admin)
 
 ---
 
-## Phase 9 — Cleanup
+## Phase 7 — Cleanup
 
-- [ ] Remove `euclid_integrated.html` and `knowledge_map_with_mastery.html` (superseded)
-- [ ] Remove `demoMastery` object from shell
+- [ ] Remove `euclid_integrated.html` (superseded)
 - [ ] Update `CLAUDE.md` architecture section to reflect new stack
-- [ ] Confirm no hardcoded `setMastery('m82463', pct)` remnants — replace with proper topic→node mapping
+- [ ] Confirm no hardcoded `setMastery('alg1', pct)` remnants — replace with proper topic→node mapping
 
 ---
 
-## Known hard parts (flag early)
+## Known hard parts
 
 | Problem | Why hard |
 |---|---|
-| Custom mastery node renderer | Requires writing WebGL GLSL shader or using sigma's underdocumented program API |
-| Blob layer camera sync | sigma doesn't expose camera matrix directly — need to compute transform manually |
-| BFS / critical path in graphology | Need to reimplement current `bfsPath` and `computeCriticalPath` using graphology traversal API |
-| Cross-iframe mastery bridge | If map is now a Vite bundle in an iframe, `window.parent.euclidMap` postMessage pattern may need adjustment |
+| Custom mastery node renderer | Requires WebGL GLSL shader or sigma's `NodeProgram` API |
+| Blob layer camera sync | sigma doesn't expose camera matrix directly — must compute transform manually |
+| BFS / critical path in graphology | Reimplement `bfsPath` + `computeCriticalPath` using graphology traversal API |
+| Cross-iframe mastery bridge | Map in Vite iframe — `window.parent.euclidMap` postMessage pattern may need adjustment |
+
+---
+
+## Deferred (not part of this migration)
+
+- PostgreSQL — add when real auth + multi-device sync needed
+- User accounts / auth
+- SRS scheduler
